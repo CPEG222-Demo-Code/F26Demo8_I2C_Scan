@@ -46,4 +46,5 @@ int main(void) {
     while (1) {// Infinite loop to keep the program running
         // Main loop
     }
+    return 0; // Return statement (not reached due to infinite loop)
 }

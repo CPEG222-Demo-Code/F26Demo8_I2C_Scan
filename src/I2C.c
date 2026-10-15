@@ -4,7 +4,7 @@
 #define PIN_WIRE_SDA          9
 #define PIN_WIRE_SCL          8
 #define PORT_WIRE           GPIOB
-#define BMI270_ADDR          (0x68 << 1) // Shifted for I2C write/read bit operations
+//#define BMI270_ADDR          (0x68 << 1) // Shifted for I2C write/read bit operations
 
 void I2C1_Init(void) {
     // Enable GPIOB and I2C1 clocks
@@ -86,18 +86,19 @@ void I2C_Stop(void) {
     I2C1->CR1 |= I2C_CR1_STOP;
 }
 
-void I2C_WriteRegister(uint8_t reg, uint8_t data) {
+void I2C_WriteRegister(uint8_t addr, uint8_t reg, uint8_t data) {
     I2C_Start();
-    I2C_Address(BMI270_ADDR, 0); // Write Mode
+    I2C_Address(addr, 0); // Write Mode
     I2C_Write(reg);
     I2C_Write(data);
     while (!(I2C1->SR1 & I2C_SR1_BTF)); // Ensure last byte fully shifted out
     I2C_Stop();
 }
 
-void I2C_WriteBurstRegister(uint8_t reg, const uint8_t *data, uint8_t length) {
+
+void I2C_WriteBurstRegister(uint8_t addr, uint8_t reg, const uint8_t *data, uint8_t length) {
     I2C_Start();
-    I2C_Address(BMI270_ADDR, 0); // Write Mode
+    I2C_Address(addr, 0); // Write Mode
     I2C_Write(reg);
     for (uint8_t i = 0; i < length; i++) {
         I2C_Write(data[i]);
@@ -106,18 +107,18 @@ void I2C_WriteBurstRegister(uint8_t reg, const uint8_t *data, uint8_t length) {
     I2C_Stop();
 }
 
-uint8_t I2C_ReadRegister(uint8_t reg) {
+uint8_t I2C_ReadRegister(uint8_t addr, uint8_t reg) {
     uint8_t data;
 
     I2C_Start();
-    I2C_Address(BMI270_ADDR, 0); // Write Mode to select register
+    I2C_Address(addr, 0); // Write Mode to select register
     I2C_Write(reg);
 
     I2C_Start(); // Repeated Start condition
 
     // For a single-byte read, clear ACK before ADDR is cleared.
     I2C1->CR1 &= ~I2C_CR1_ACK;
-    I2C1->DR = BMI270_ADDR | 1U;
+    I2C1->DR = addr | 1U;
     while (!(I2C1->SR1 & I2C_SR1_ADDR));
     (void)I2C1->SR2;
 
@@ -131,8 +132,8 @@ uint8_t I2C_ReadRegister(uint8_t reg) {
     return data;
 }
 
-void I2C_ReadBurst(uint8_t start_reg, uint8_t *buffer, uint8_t length) {
+void I2C_ReadBurst(uint8_t addr, uint8_t start_reg, uint8_t *buffer, uint8_t length) {
     for (uint8_t i = 0; i < length; i++) {
-        buffer[i] = I2C_ReadRegister((uint8_t)(start_reg + i));
+        buffer[i] = I2C_ReadRegister(addr, (uint8_t)(start_reg + i));
     }
 }
