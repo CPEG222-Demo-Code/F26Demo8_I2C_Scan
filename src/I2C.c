@@ -40,13 +40,13 @@ uint8_t I2C1_IsDeviceReady(uint8_t addr) {
     I2C1->CR1 |= I2C_CR1_START | I2C_CR1_ACK; // must include ACK for single byte read   
     // Wait for start bit to be sent
     uint32_t timeout = 10000;
-    while (!(I2C1->SR1 & I2C_SR1_SB) && timeout--);
+    while (!(I2C1->SR1 & I2C_SR1_SB) && --timeout);
     if (timeout == 0) return 0; // Timeout    
     // Send device address
     I2C1->DR = addr << 1; // Write address  
     // Wait for address to be sent
     timeout = 10000;
-    while (!(I2C1->SR1 & I2C_SR1_ADDR) && !(I2C1->SR1 & I2C_SR1_AF) && timeout--);  
+    while (!(I2C1->SR1 & I2C_SR1_ADDR) && !(I2C1->SR1 & I2C_SR1_AF) && --timeout);  
     if (I2C1->SR1 & I2C_SR1_AF) {
         // NACK received - device not present
         I2C1->SR1 &= ~I2C_SR1_AF; // Clear AF flag
@@ -74,7 +74,7 @@ void I2C_Write(uint8_t data) { // Write a byte of data to the I2C bus
 }
 
 void I2C_Address(uint8_t addr, uint8_t direction) { // Send the 7-bit address with the specified direction (0 for write, 1 for read)
-    I2C1->DR = addr | direction;
+    I2C1->DR = (addr << 1) | direction;
     while (!(I2C1->SR1 & I2C_SR1_ADDR)); // Wait for address acknowledgment match
     (void)I2C1->SR2; // Clear ADDR flag by reading SR2
 }
@@ -111,7 +111,7 @@ uint8_t I2C_ReadRegister(uint8_t addr, uint8_t reg) { // Read a single byte of d
     I2C_Start(); // Repeated Start condition
     // For a single-byte read, clear ACK before ADDR is cleared.
     I2C1->CR1 &= ~I2C_CR1_ACK;
-    I2C1->DR = addr | 1U;
+    I2C1->DR = (addr << 1) | 1U;
     while (!(I2C1->SR1 & I2C_SR1_ADDR));
     (void)I2C1->SR2;
     I2C_Stop();
